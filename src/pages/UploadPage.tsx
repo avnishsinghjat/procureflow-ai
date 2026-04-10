@@ -205,22 +205,24 @@ export default function UploadPage() {
   );
 }
 
-// Lazy-load pdf.js from CDN
+// Lazy-load pdf.js from CDN via classic script tag
 let pdfJsPromise: Promise<any> | null = null;
 function loadPdfJs(): Promise<any> {
   if (pdfJsPromise) return pdfJsPromise;
   pdfJsPromise = new Promise((resolve, reject) => {
+    if ((window as any).pdfjsLib) {
+      resolve((window as any).pdfjsLib);
+      return;
+    }
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs';
-    script.type = 'module';
-
-    // For module scripts we need a different approach — use dynamic import
-    import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs')
-      .then((mod) => {
-        mod.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
-        resolve(mod);
-      })
-      .catch(reject);
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      const lib = (window as any).pdfjsLib;
+      lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve(lib);
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
   });
   return pdfJsPromise;
 }
