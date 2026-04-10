@@ -15,6 +15,7 @@ export default function CaseDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const [commentText, setCommentText] = useState('');
+  const [previewDoc, setPreviewDoc] = useState<PFDocument | null>(null);
   const [, setRefresh] = useState(0);
   const refresh = () => setRefresh(n => n + 1);
 
