@@ -5,8 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { DocumentType } from '@/lib/types';
-import { Upload, Brain, CheckCircle2, Loader2, ImageIcon, AlertCircle } from 'lucide-react';
+import { Upload, Brain, CheckCircle2, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { runOcr, isImageFile, isPdfFile } from '@/lib/ocr';
+import { classifyDocument, extractFields, summarizeDocument, isOpenRouterConfigured } from '@/lib/openrouter';
 import { toast } from 'sonner';
 
 export default function UploadPage() {
@@ -19,7 +20,7 @@ export default function UploadPage() {
   const [processing, setProcessing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [statusMsg, setStatusMsg] = useState('');
-  const [result, setResult] = useState<{ ocrText: string; confidence: number; summary: string } | null>(null);
+  const [result, setResult] = useState<{ ocrText: string; confidence: number; summary: string; extractedFields?: Record<string, unknown>; classifiedType?: string; classifyConfidence?: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (f: File | null) => {
@@ -85,8 +86,31 @@ export default function UploadPage() {
         return;
       }
 
+      let summary = `OCR extracted ${ocrText.split(/\s+/).length} words from ${file.name} with ${(confidence * 100).toFixed(0)}% average confidence.`;
+      let extractedFields: Record<string, unknown> = {};
+      let classifiedType: string = docType;
+      let classifyConfidence = 0;
+
+      // Run AI if OpenRouter is configured
+      if (isOpenRouterConfigured() && ocrText.trim().length > 20) {
+        try {
+          setStatusMsg('AI: Classifying document…');
+          const classification = await classifyDocument(ocrText);
+          classifiedType = classification.documentType;
+          classifyConfidence = classification.confidence;
+
+          setStatusMsg('AI: Extracting fields…');
+          extractedFields = await extractFields(ocrText);
+
+          setStatusMsg('AI: Generating summary…');
+          summary = await summarizeDocument(ocrText);
+        } catch (aiErr: any) {
+          console.warn('AI processing failed, using OCR-only results:', aiErr);
+          toast.error(`AI processing failed: ${aiErr.message}`);
+        }
+      }
+
       setStatusMsg('Saving document…');
-      const summary = `OCR extracted ${ocrText.split(/\s+/).length} words from ${file.name} with ${(confidence * 100).toFixed(0)}% average confidence.`;
 
       const doc = {
         id: crypto.randomUUID(),
@@ -94,9 +118,10 @@ export default function UploadPage() {
         fileName: file.name,
         fileSize: file.size,
         mimeType: file.type,
-        documentType: docType,
+        documentType: classifiedType as DocumentType,
         uploadedById: user.id,
         ocrText,
+        extractionJson: Object.keys(extractedFields).length > 0 ? extractedFields : undefined,
         extractionConfidence: confidence,
         aiSummary: summary,
         version: 1,
@@ -104,8 +129,8 @@ export default function UploadPage() {
       };
 
       addDocument(doc);
-      setResult({ ocrText, confidence, summary });
-      toast.success('OCR processing complete!');
+      setResult({ ocrText, confidence, summary, extractedFields, classifiedType, classifyConfidence });
+      toast.success('Processing complete!');
     } catch (err) {
       console.error('OCR error:', err);
       toast.error('OCR processing failed. Please try again.');
@@ -191,13 +216,46 @@ export default function UploadPage() {
             <div className="flex items-center gap-2 mb-3">
               <CheckCircle2 className="h-5 w-5 text-success" />
               <h2 className="font-heading font-semibold text-sm">OCR Extraction Complete</h2>
-              <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full ml-auto">{(result.confidence * 100).toFixed(0)}% confidence</span>
+              <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full ml-auto">{(result.confidence * 100).toFixed(0)}% OCR confidence</span>
             </div>
-            <pre className="bg-muted rounded-lg p-4 text-xs font-mono whitespace-pre-wrap max-h-[400px] overflow-auto">{result.ocrText}</pre>
+            <pre className="bg-muted rounded-lg p-4 text-xs font-mono whitespace-pre-wrap max-h-[300px] overflow-auto">{result.ocrText}</pre>
           </div>
+
+          {/* AI Classification */}
+          {result.classifiedType && (
+            <div className="bg-card rounded-xl border border-border p-5">
+              <h2 className="font-heading font-semibold text-sm mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> AI Classification
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold bg-primary/10 text-primary px-3 py-1 rounded-full">{result.classifiedType}</span>
+                {result.classifyConfidence != null && result.classifyConfidence > 0 && (
+                  <span className="text-xs text-success">{(result.classifyConfidence * 100).toFixed(0)}% confidence</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Extracted Fields */}
+          {result.extractedFields && Object.keys(result.extractedFields).length > 0 && (
+            <div className="bg-card rounded-xl border border-border p-5">
+              <h2 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> Extracted Fields
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {Object.entries(result.extractedFields).filter(([, v]) => v != null).map(([k, v]) => (
+                  <div key={k} className="bg-muted rounded-lg p-2">
+                    <p className="text-[10px] text-muted-foreground uppercase">{k}</p>
+                    <p className="text-sm font-medium">{String(v)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-card rounded-xl border border-border p-5">
-            <h2 className="font-heading font-semibold text-sm mb-2">Summary</h2>
-            <p className="text-sm text-muted-foreground">{result.summary}</p>
+            <h2 className="font-heading font-semibold text-sm mb-2">AI Summary</h2>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{result.summary}</p>
           </div>
         </div>
       )}
