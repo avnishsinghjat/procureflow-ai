@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { canCreateCase } from '@/lib/rbac';
 
 export default function CasesPage() {
+  const { user } = useAuth();
   const cases = getCases();
   const [search, setSearch] = useState('');
 
@@ -22,7 +23,9 @@ export default function CasesPage() {
     <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-heading font-bold">Procurement Cases</h1>
-        <Link to="/cases/new"><Button size="sm"><Plus className="h-4 w-4 mr-1" /> New MPR</Button></Link>
+        {user && canCreateCase(user.role) && (
+          <Link to="/cases/new"><Button size="sm"><Plus className="h-4 w-4 mr-1" /> New MPR</Button></Link>
+        )}
       </div>
 
       <div className="relative max-w-sm">
