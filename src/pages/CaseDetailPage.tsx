@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PipelineRibbon } from '@/components/PipelineRibbon';
 import { PriorityBadge, StatusBadge } from '@/components/Badges';
 import { STAGES, STAGE_REQUIRED_DOCS, type Stage } from '@/lib/types';
+import { canTransitionStage, canSendBack } from '@/lib/rbac';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, CheckCircle2, XCircle, AlertCircle, MessageSquare, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
+import { FileText, CheckCircle2, XCircle, AlertCircle, MessageSquare, Clock, ArrowRight, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 
 export default function CaseDetailPage() {
@@ -76,15 +77,22 @@ export default function CaseDetailPage() {
       {/* Pipeline */}
       <PipelineRibbon currentStage={caseData.currentStage} />
 
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button size="sm" onClick={handleSendBack} variant="outline" disabled={currentIdx === 0}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Send Back
-        </Button>
-        <Button size="sm" onClick={handleAdvance} disabled={currentIdx === STAGES.length - 1}>
-          Advance to {currentIdx < STAGES.length - 1 ? STAGES[currentIdx + 1] : '—'} <ArrowRight className="h-4 w-4 ml-1" />
-        </Button>
-      </div>
+      {/* Actions — role-gated */}
+      {user && canTransitionStage(user.role, caseData.currentStage) ? (
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSendBack} variant="outline" disabled={currentIdx === 0 || !canSendBack(user.role, caseData.currentStage)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Send Back
+          </Button>
+          <Button size="sm" onClick={handleAdvance} disabled={currentIdx === STAGES.length - 1}>
+            Advance to {currentIdx < STAGES.length - 1 ? STAGES[currentIdx + 1] : '—'} <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted rounded-lg px-4 py-2.5">
+          <ShieldAlert className="h-4 w-4" />
+          <span>Your role cannot transition this case at the <strong>{caseData.currentStage}</strong> stage.</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left: details + docs */}

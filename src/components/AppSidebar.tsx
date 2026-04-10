@@ -5,9 +5,18 @@ import {
   LogOut, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { canAccessRoute } from '@/lib/rbac';
 import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
-const navItems = [
+interface NavItem {
+  label: string;
+  icon: LucideIcon;
+  path: string;
+  section?: 'admin';
+}
+
+const allNavItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { label: 'Cases', icon: FolderOpen, path: '/cases' },
   { label: 'Pipeline', icon: GitBranch, path: '/pipeline' },
@@ -16,18 +25,21 @@ const navItems = [
   { label: 'Approvals', icon: CheckSquare, path: '/approvals' },
   { label: 'Audit Trail', icon: History, path: '/audit' },
   { label: 'Archive', icon: Search, path: '/archive' },
-];
-
-const adminItems = [
-  { label: 'Settings', icon: Settings, path: '/settings' },
-  { label: 'Users', icon: Users, path: '/users' },
-  { label: 'Checklists', icon: ListChecks, path: '/checklists' },
+  { label: 'Settings', icon: Settings, path: '/settings', section: 'admin' },
+  { label: 'Users', icon: Users, path: '/users', section: 'admin' },
+  { label: 'Checklists', icon: ListChecks, path: '/checklists', section: 'admin' },
 ];
 
 export function AppSidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+
+  if (!user) return null;
+
+  const visibleItems = allNavItems.filter(item => canAccessRoute(user.role, item.path));
+  const mainItems = visibleItems.filter(i => !i.section);
+  const adminItems = visibleItems.filter(i => i.section === 'admin');
 
   return (
     <aside className={`${collapsed ? 'w-16' : 'w-60'} bg-sidebar text-sidebar-foreground flex flex-col h-screen sticky top-0 transition-all duration-200`}>
@@ -41,7 +53,7 @@ export function AppSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {navItems.map(item => {
+        {mainItems.map(item => {
           const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
           return (
             <Link
@@ -55,7 +67,7 @@ export function AppSidebar() {
           );
         })}
 
-        {(user?.role === 'admin') && (
+        {adminItems.length > 0 && (
           <>
             <div className={`${collapsed ? 'mx-2' : 'mx-3'} my-3 border-t border-sidebar-border`} />
             {!collapsed && <p className="px-3 text-[10px] uppercase tracking-widest text-sidebar-foreground/50 mb-1">Admin</p>}
@@ -81,7 +93,7 @@ export function AppSidebar() {
         {user && !collapsed && (
           <div className="px-3 py-2">
             <p className="text-xs font-medium text-sidebar-accent-foreground truncate">{user.name}</p>
-            <p className="text-[10px] text-sidebar-foreground/60 truncate">{user.role.replace(/_/g, ' ')}</p>
+            <p className="text-[10px] text-sidebar-foreground/60 truncate capitalize">{user.role.replace(/_/g, ' ')}</p>
           </div>
         )}
         <button onClick={logout} className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 w-full">
