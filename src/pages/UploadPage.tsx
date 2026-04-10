@@ -88,7 +88,7 @@ export default function UploadPage() {
 
       let summary = `OCR extracted ${ocrText.split(/\s+/).length} words from ${file.name} with ${(confidence * 100).toFixed(0)}% average confidence.`;
       let extractedFields: Record<string, unknown> = {};
-      let classifiedType = docType;
+      let classifiedType: string = docType;
       let classifyConfidence = 0;
 
       // Run AI if OpenRouter is configured
