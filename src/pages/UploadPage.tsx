@@ -196,11 +196,22 @@ export default function UploadPage() {
     setNewFieldKey('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!ocrResult || !file || !user || !selectedCase) return;
     const extractionJson = Object.fromEntries(
       Object.entries(editableFields).filter(([, v]) => v.trim() !== '')
     );
+
+    // Store file as data URL for preview
+    let fileDataUrl: string | undefined;
+    try {
+      fileDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    } catch { /* skip if too large */ }
 
     addDocument({
       id: crypto.randomUUID(),
@@ -214,6 +225,7 @@ export default function UploadPage() {
       extractionJson: Object.keys(extractionJson).length > 0 ? extractionJson : undefined,
       extractionConfidence: ocrResult.confidence,
       aiSummary: editableSummary,
+      fileDataUrl,
       version: 1,
       createdAt: new Date().toISOString(),
     });

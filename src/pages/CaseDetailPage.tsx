@@ -3,11 +3,12 @@ import { getCase, getDocuments, getApprovals, getEvents, getComments, getCheckli
 import { useAuth } from '@/contexts/AuthContext';
 import { PipelineRibbon } from '@/components/PipelineRibbon';
 import { PriorityBadge, StatusBadge } from '@/components/Badges';
-import { STAGES, STAGE_REQUIRED_DOCS, type Stage } from '@/lib/types';
+import { STAGES, STAGE_REQUIRED_DOCS, type Stage, type Document as PFDocument } from '@/lib/types';
 import { canTransitionStage, canSendBack } from '@/lib/rbac';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, CheckCircle2, XCircle, AlertCircle, MessageSquare, Clock, ArrowRight, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FileText, CheckCircle2, XCircle, AlertCircle, MessageSquare, Clock, ArrowRight, ArrowLeft, ShieldAlert, Eye, Image, FileType } from 'lucide-react';
 import { useState } from 'react';
 
 export default function CaseDetailPage() {
