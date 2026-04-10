@@ -11,6 +11,7 @@ const ROUTE_ACCESS: Record<string, Role[]> = {
   '/ai-review':   ['admin', 'procurement_officer', 'tec_member', 'commercial_reviewer', 'cst_reviewer', 'approver'],
   '/approvals':   ['admin', 'procurement_officer', 'tec_member', 'commercial_reviewer', 'cst_reviewer', 'approver'],
   '/audit':       ['admin', 'procurement_officer', 'approver'],
+  '/documents':   ['admin', 'requester', 'procurement_officer', 'tec_member', 'commercial_reviewer', 'cst_reviewer', 'approver', 'receipt_officer', 'finance_officer'],
   '/archive':     ['admin', 'requester', 'procurement_officer', 'tec_member', 'commercial_reviewer', 'cst_reviewer', 'approver', 'receipt_officer', 'finance_officer'],
   '/settings':    ['admin'],
   '/users':       ['admin'],
