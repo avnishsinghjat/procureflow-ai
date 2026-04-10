@@ -76,7 +76,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login form */}
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-lg">
           <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
             <h2 className="font-heading font-semibold text-lg mb-4 text-center">Sign In</h2>
             <form onSubmit={handleLogin} className="space-y-3">
@@ -85,9 +85,31 @@ export default function LoginPage() {
               {error && <p className="text-xs text-destructive">{error}</p>}
               <Button type="submit" className="w-full">Sign In</Button>
             </form>
-            <p className="text-[10px] text-muted-foreground mt-3 text-center">
-              Demo: admin@procureflow.ai / any password
-            </p>
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-[10px] text-muted-foreground mb-2 text-center font-medium uppercase tracking-wide">Demo accounts (any password)</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { email: 'admin@procureflow.ai', role: 'Admin' },
+                  { email: 'rajesh@procureflow.ai', role: 'Requester' },
+                  { email: 'anita@procureflow.ai', role: 'Procurement Officer' },
+                  { email: 'vikram@procureflow.ai', role: 'TEC Member' },
+                  { email: 'meera@procureflow.ai', role: 'Commercial Reviewer' },
+                  { email: 'arjun@procureflow.ai', role: 'CST Reviewer' },
+                  { email: 'kavita@procureflow.ai', role: 'Approver' },
+                  { email: 'suresh@procureflow.ai', role: 'Receipt Officer' },
+                  { email: 'deepa@procureflow.ai', role: 'Finance Officer' },
+                ].map(acc => (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => setEmail(acc.email)}
+                    className={`text-left text-[11px] px-2.5 py-1.5 rounded-md border transition-colors ${email === acc.email ? 'border-primary bg-accent text-accent-foreground' : 'border-border hover:bg-muted text-muted-foreground'}`}
+                  >
+                    <span className="font-medium block">{acc.role}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
