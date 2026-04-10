@@ -91,6 +91,7 @@ export interface Document {
   extractionJson?: Record<string, unknown>;
   extractionConfidence?: number;
   aiSummary?: string;
+  fileDataUrl?: string;
   version: number;
   createdAt: string;
 }

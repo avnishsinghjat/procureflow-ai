@@ -3,17 +3,19 @@ import { getCase, getDocuments, getApprovals, getEvents, getComments, getCheckli
 import { useAuth } from '@/contexts/AuthContext';
 import { PipelineRibbon } from '@/components/PipelineRibbon';
 import { PriorityBadge, StatusBadge } from '@/components/Badges';
-import { STAGES, STAGE_REQUIRED_DOCS, type Stage } from '@/lib/types';
+import { STAGES, STAGE_REQUIRED_DOCS, type Stage, type Document as PFDocument } from '@/lib/types';
 import { canTransitionStage, canSendBack } from '@/lib/rbac';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, CheckCircle2, XCircle, AlertCircle, MessageSquare, Clock, ArrowRight, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FileText, CheckCircle2, XCircle, AlertCircle, MessageSquare, Clock, ArrowRight, ArrowLeft, ShieldAlert, Eye, Image, FileType } from 'lucide-react';
 import { useState } from 'react';
 
 export default function CaseDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const [commentText, setCommentText] = useState('');
+  const [previewDoc, setPreviewDoc] = useState<PFDocument | null>(null);
   const [, setRefresh] = useState(0);
   const refresh = () => setRefresh(n => n + 1);
 
@@ -118,8 +120,16 @@ export default function CaseDetailPage() {
             ) : (
               <div className="space-y-2">
                 {docs.map(d => (
-                  <div key={d.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <button
+                    key={d.id}
+                    onClick={() => setPreviewDoc(d)}
+                    className="flex items-center gap-3 py-2.5 px-3 border border-border rounded-lg w-full text-left hover:bg-accent/50 transition-colors group"
+                  >
+                    {d.mimeType?.startsWith('image/') ? (
+                      <Image className="h-4 w-4 text-primary shrink-0" />
+                    ) : (
+                      <FileType className="h-4 w-4 text-primary shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{d.fileName}</p>
                       <p className="text-[10px] text-muted-foreground">{d.documentType} • v{d.version}</p>
@@ -127,7 +137,8 @@ export default function CaseDetailPage() {
                     {d.extractionConfidence && (
                       <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">{(d.extractionConfidence * 100).toFixed(0)}% conf.</span>
                     )}
-                  </div>
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
                 ))}
               </div>
             )}
@@ -232,6 +243,81 @@ export default function CaseDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Document Preview Modal */}
+      <Dialog open={!!previewDoc} onOpenChange={() => setPreviewDoc(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <FileText className="h-4 w-4" />
+              {previewDoc?.fileName}
+            </DialogTitle>
+          </DialogHeader>
+
+          {previewDoc && (
+            <div className="space-y-4">
+              {/* File preview */}
+              {previewDoc.fileDataUrl ? (
+                previewDoc.mimeType?.startsWith('image/') ? (
+                  <div className="rounded-lg border border-border overflow-hidden bg-muted/30">
+                    <img src={previewDoc.fileDataUrl} alt={previewDoc.fileName} className="w-full h-auto max-h-[400px] object-contain" />
+                  </div>
+                ) : previewDoc.mimeType === 'application/pdf' ? (
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <iframe src={previewDoc.fileDataUrl} className="w-full h-[400px]" title={previewDoc.fileName} />
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">Preview not available for this file type.</p>
+                )
+              ) : (
+                <div className="rounded-lg border border-border bg-muted/30 p-8 text-center">
+                  <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No preview data stored. Upload this document again to enable previews.</p>
+                </div>
+              )}
+
+              {/* Metadata */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div><span className="text-muted-foreground text-xs block">Type</span>{previewDoc.documentType}</div>
+                <div><span className="text-muted-foreground text-xs block">Size</span>{(previewDoc.fileSize / 1024).toFixed(1)} KB</div>
+                <div><span className="text-muted-foreground text-xs block">Version</span>v{previewDoc.version}</div>
+                <div><span className="text-muted-foreground text-xs block">Uploaded</span>{new Date(previewDoc.createdAt).toLocaleDateString()}</div>
+              </div>
+
+              {/* Extracted fields */}
+              {previewDoc.extractionJson && Object.keys(previewDoc.extractionJson).length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Extracted Fields</h3>
+                  <div className="bg-muted/30 rounded-lg p-3 space-y-1.5">
+                    {Object.entries(previewDoc.extractionJson).map(([k, v]) => (
+                      <div key={k} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground capitalize">{k.replace(/_/g, ' ')}</span>
+                        <span className="font-medium">{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Summary */}
+              {previewDoc.aiSummary && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">AI Summary</h3>
+                  <p className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">{previewDoc.aiSummary}</p>
+                </div>
+              )}
+
+              {/* OCR Text */}
+              {previewDoc.ocrText && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">OCR Text</h3>
+                  <pre className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">{previewDoc.ocrText}</pre>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
