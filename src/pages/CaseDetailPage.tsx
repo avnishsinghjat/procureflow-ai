@@ -120,8 +120,16 @@ export default function CaseDetailPage() {
             ) : (
               <div className="space-y-2">
                 {docs.map(d => (
-                  <div key={d.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <button
+                    key={d.id}
+                    onClick={() => setPreviewDoc(d)}
+                    className="flex items-center gap-3 py-2.5 px-3 border border-border rounded-lg w-full text-left hover:bg-accent/50 transition-colors group"
+                  >
+                    {d.mimeType?.startsWith('image/') ? (
+                      <Image className="h-4 w-4 text-primary shrink-0" />
+                    ) : (
+                      <FileType className="h-4 w-4 text-primary shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{d.fileName}</p>
                       <p className="text-[10px] text-muted-foreground">{d.documentType} • v{d.version}</p>
@@ -129,7 +137,8 @@ export default function CaseDetailPage() {
                     {d.extractionConfidence && (
                       <span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">{(d.extractionConfidence * 100).toFixed(0)}% conf.</span>
                     )}
-                  </div>
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
                 ))}
               </div>
             )}
