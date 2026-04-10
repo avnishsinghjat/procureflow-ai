@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { STAGES, type Stage } from '@/lib/types';
 import { StatCard } from '@/components/StatCard';
 import { PriorityBadge, StageBadge, StatusBadge } from '@/components/Badges';
+import { canCreateCase, canUploadDocuments, canAccessRoute } from '@/lib/rbac';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,9 +32,15 @@ export default function DashboardPage() {
           <p className="text-sm text-muted-foreground">Welcome back, {user?.name}</p>
         </div>
         <div className="flex gap-2">
-          <Link to="/cases/new"><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Create MPR</Button></Link>
-          <Link to="/upload"><Button size="sm" variant="outline"><Upload className="h-4 w-4 mr-1" /> Upload</Button></Link>
-          <Link to="/approvals"><Button size="sm" variant="outline"><Eye className="h-4 w-4 mr-1" /> Review</Button></Link>
+          {user && canCreateCase(user.role) && (
+            <Link to="/cases/new"><Button size="sm"><Plus className="h-4 w-4 mr-1" /> Create MPR</Button></Link>
+          )}
+          {user && canUploadDocuments(user.role) && (
+            <Link to="/upload"><Button size="sm" variant="outline"><Upload className="h-4 w-4 mr-1" /> Upload</Button></Link>
+          )}
+          {user && canAccessRoute(user.role, '/approvals') && (
+            <Link to="/approvals"><Button size="sm" variant="outline"><Eye className="h-4 w-4 mr-1" /> Review</Button></Link>
+          )}
         </div>
       </div>
 
