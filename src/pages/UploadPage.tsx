@@ -5,8 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { DocumentType } from '@/lib/types';
-import { Upload, Brain, CheckCircle2, Loader2, ImageIcon, AlertCircle } from 'lucide-react';
+import { Upload, Brain, CheckCircle2, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { runOcr, isImageFile, isPdfFile } from '@/lib/ocr';
+import { classifyDocument, extractFields, summarizeDocument, isOpenRouterConfigured } from '@/lib/openrouter';
 import { toast } from 'sonner';
 
 export default function UploadPage() {
@@ -19,7 +20,7 @@ export default function UploadPage() {
   const [processing, setProcessing] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [statusMsg, setStatusMsg] = useState('');
-  const [result, setResult] = useState<{ ocrText: string; confidence: number; summary: string } | null>(null);
+  const [result, setResult] = useState<{ ocrText: string; confidence: number; summary: string; extractedFields?: Record<string, unknown>; classifiedType?: string; classifyConfidence?: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (f: File | null) => {
@@ -85,8 +86,31 @@ export default function UploadPage() {
         return;
       }
 
+      let summary = `OCR extracted ${ocrText.split(/\s+/).length} words from ${file.name} with ${(confidence * 100).toFixed(0)}% average confidence.`;
+      let extractedFields: Record<string, unknown> = {};
+      let classifiedType = docType;
+      let classifyConfidence = 0;
+
+      // Run AI if OpenRouter is configured
+      if (isOpenRouterConfigured() && ocrText.trim().length > 20) {
+        try {
+          setStatusMsg('AI: Classifying document…');
+          const classification = await classifyDocument(ocrText);
+          classifiedType = classification.documentType;
+          classifyConfidence = classification.confidence;
+
+          setStatusMsg('AI: Extracting fields…');
+          extractedFields = await extractFields(ocrText);
+
+          setStatusMsg('AI: Generating summary…');
+          summary = await summarizeDocument(ocrText);
+        } catch (aiErr: any) {
+          console.warn('AI processing failed, using OCR-only results:', aiErr);
+          toast.error(`AI processing failed: ${aiErr.message}`);
+        }
+      }
+
       setStatusMsg('Saving document…');
-      const summary = `OCR extracted ${ocrText.split(/\s+/).length} words from ${file.name} with ${(confidence * 100).toFixed(0)}% average confidence.`;
 
       const doc = {
         id: crypto.randomUUID(),
@@ -94,9 +118,10 @@ export default function UploadPage() {
         fileName: file.name,
         fileSize: file.size,
         mimeType: file.type,
-        documentType: docType,
+        documentType: classifiedType as DocumentType,
         uploadedById: user.id,
         ocrText,
+        extractionJson: Object.keys(extractedFields).length > 0 ? extractedFields : undefined,
         extractionConfidence: confidence,
         aiSummary: summary,
         version: 1,
@@ -104,8 +129,8 @@ export default function UploadPage() {
       };
 
       addDocument(doc);
-      setResult({ ocrText, confidence, summary });
-      toast.success('OCR processing complete!');
+      setResult({ ocrText, confidence, summary, extractedFields, classifiedType, classifyConfidence });
+      toast.success('Processing complete!');
     } catch (err) {
       console.error('OCR error:', err);
       toast.error('OCR processing failed. Please try again.');
