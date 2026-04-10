@@ -16,6 +16,7 @@ import UploadPage from "@/pages/UploadPage";
 import AIReviewPage from "@/pages/AIReviewPage";
 import ApprovalsPage from "@/pages/ApprovalsPage";
 import AuditTrailPage from "@/pages/AuditTrailPage";
+import DocumentsPage from "@/pages/DocumentsPage";
 import ArchivePage from "@/pages/ArchivePage";
 import SettingsPage from "@/pages/SettingsPage";
 import UsersPage from "@/pages/UsersPage";
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/cases/:id" element={<Guarded><CaseDetailPage /></Guarded>} />
               <Route path="/pipeline" element={<Guarded><PipelinePage /></Guarded>} />
               <Route path="/upload" element={<Guarded><UploadPage /></Guarded>} />
+              <Route path="/documents" element={<Guarded><DocumentsPage /></Guarded>} />
               <Route path="/ai-review" element={<Guarded><AIReviewPage /></Guarded>} />
               <Route path="/approvals" element={<Guarded><ApprovalsPage /></Guarded>} />
               <Route path="/audit" element={<Guarded><AuditTrailPage /></Guarded>} />

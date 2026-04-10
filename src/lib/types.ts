@@ -92,8 +92,11 @@ export interface Document {
   extractionConfidence?: number;
   aiSummary?: string;
   fileDataUrl?: string;
+  tags?: string[];
+  category?: string;
   version: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Approval {

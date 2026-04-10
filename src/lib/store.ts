@@ -71,6 +71,8 @@ export const getDocuments = (caseId?: string) => {
   return caseId ? all.filter(d => d.caseId === caseId) : all;
 };
 export const addDocument = (d: Document) => { const all = get<Document>(KEYS.documents); all.push(d); set(KEYS.documents, all); };
+export const updateDocument = (d: Document) => { set(KEYS.documents, get<Document>(KEYS.documents).map(x => x.id === d.id ? d : x)); };
+export const deleteDocument = (id: string) => { set(KEYS.documents, get<Document>(KEYS.documents).filter(x => x.id !== id)); };
 
 // Approvals
 export const getApprovals = (caseId?: string) => {

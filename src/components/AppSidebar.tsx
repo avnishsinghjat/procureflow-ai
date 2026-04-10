@@ -21,6 +21,7 @@ const allNavItems: NavItem[] = [
   { label: 'Cases', icon: FolderOpen, path: '/cases' },
   { label: 'Pipeline', icon: GitBranch, path: '/pipeline' },
   { label: 'Upload & OCR', icon: FileUp, path: '/upload' },
+  { label: 'Documents', icon: FolderOpen, path: '/documents' },
   { label: 'AI Review', icon: Brain, path: '/ai-review' },
   { label: 'Approvals', icon: CheckSquare, path: '/approvals' },
   { label: 'Audit Trail', icon: History, path: '/audit' },
