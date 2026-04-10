@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { Brain, FileText, AlertTriangle, CheckCircle2, RefreshCw, Sparkles, Loader2, Info } from 'lucide-react';
 import {
   classifyDocument, extractFields, summarizeDocument,
-  detectMissingAttachments, draftApprovalNote, isOpenRouterConfigured
-} from '@/lib/openrouter';
+  detectMissingAttachments, draftApprovalNote, isLmStudioConfigured
+} from '@/lib/lmstudio';
 import { STAGE_REQUIRED_DOCS } from '@/lib/types';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -17,7 +17,7 @@ export default function AIReviewPage() {
   const docs = getDocuments(selectedCase);
   const caseData = cases.find(c => c.id === selectedCase);
   const docsWithOcr = docs.filter(d => d.ocrText);
-  const configured = isOpenRouterConfigured();
+  const configured = isLmStudioConfigured();
 
   const [loading, setLoading] = useState<string | null>(null);
   const [aiResults, setAiResults] = useState<{
@@ -109,8 +109,8 @@ export default function AIReviewPage() {
         <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium">OpenRouter not configured</p>
-            <p className="text-xs text-muted-foreground">Add your API key in <Link to="/settings" className="text-primary underline">Settings</Link> to enable real AI analysis.</p>
+            <p className="text-sm font-medium">LM Studio not configured</p>
+            <p className="text-xs text-muted-foreground">Set your LM Studio server URL in <Link to="/settings" className="text-primary underline">Settings</Link> to enable real AI analysis.</p>
           </div>
         </div>
       )}

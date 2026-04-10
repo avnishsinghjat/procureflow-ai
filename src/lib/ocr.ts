@@ -7,13 +7,17 @@ export interface OcrResult {
 
 /**
  * Run Tesseract.js OCR on an image file (PNG/JPG).
- * For PDFs, the caller must first render pages to images.
+ * All assets (worker, WASM core, language data) are served from /tesseract/
+ * so the app works fully offline.
  */
 export async function runOcr(
   imageSource: File | Blob | string,
   onProgress?: (progress: number) => void
 ): Promise<OcrResult> {
   const result = await Tesseract.recognize(imageSource, 'eng', {
+    workerPath: '/tesseract/worker.min.js',
+    corePath: '/tesseract',
+    langPath: '/tesseract/lang-data',
     logger: (m) => {
       if (m.status === 'recognizing text' && onProgress) {
         onProgress(Math.round(m.progress * 100));
@@ -23,7 +27,7 @@ export async function runOcr(
 
   return {
     text: result.data.text,
-    confidence: result.data.confidence / 100, // normalize to 0-1
+    confidence: result.data.confidence / 100,
   };
 }
 

@@ -74,9 +74,8 @@ export function seedData() {
   ];
 
   const settings: AppSetting[] = [
-    { key: 'openrouter_api_key', value: '' },
-    { key: 'openrouter_model', value: 'meta-llama/llama-3.1-8b-instruct:free' },
-    { key: 'openrouter_fallback_model', value: 'google/gemma-2-9b-it:free' },
+    { key: 'lmstudio_base_url', value: 'http://localhost:1234' },
+    { key: 'lmstudio_model', value: 'default' },
     { key: 'company_name', value: 'ProcureFlow AI' },
   ];
 

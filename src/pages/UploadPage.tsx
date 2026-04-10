@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import type { DocumentType } from '@/lib/types';
 import { Upload, Brain, CheckCircle2, Loader2, Sparkles, Save, PenLine, Plus, Trash2, RotateCcw } from 'lucide-react';
 import { runOcr, isImageFile, isPdfFile } from '@/lib/ocr';
-import { classifyDocument, extractFields, summarizeDocument, isOpenRouterConfigured } from '@/lib/openrouter';
+import { classifyDocument, extractFields, summarizeDocument, isLmStudioConfigured } from '@/lib/lmstudio';
 import { toast } from 'sonner';
 
 const EXTRACTION_FIELD_KEYS = [
@@ -134,7 +134,7 @@ export default function UploadPage() {
       let classifiedType: DocumentType = docType;
       let summary = `OCR extracted ${ocrText.split(/\s+/).length} words with ${(confidence * 100).toFixed(0)}% confidence.`;
 
-      if (isOpenRouterConfigured() && ocrText.trim().length > 20) {
+      if (isLmStudioConfigured() && ocrText.trim().length > 20) {
         try {
           setStatusMsg('AI: Classifying document…');
           const cls = await classifyDocument(ocrText);
@@ -423,24 +423,11 @@ export default function UploadPage() {
   );
 }
 
-// Lazy-load pdf.js from CDN
-let pdfJsPromise: Promise<any> | null = null;
-function loadPdfJs(): Promise<any> {
-  if (pdfJsPromise) return pdfJsPromise;
-  pdfJsPromise = new Promise((resolve, reject) => {
-    if ((window as any).pdfjsLib) {
-      resolve((window as any).pdfjsLib);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-    script.onload = () => {
-      const lib = (window as any).pdfjsLib;
-      lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      resolve(lib);
-    };
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-  return pdfJsPromise;
+async function loadPdfJs() {
+  const pdfjs = await import('pdfjs-dist');
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.js',
+    import.meta.url
+  ).toString();
+  return pdfjs;
 }
